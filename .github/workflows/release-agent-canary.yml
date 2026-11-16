@@ -43,7 +43,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GITHUB_TOKEN_RELEASE_NOTES: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_SECRET_CANARY: ${{ secrets.RELEASE_SECRET_CANARY }}
-          RELEASE_NOTES_MODEL: huggingface/zai-org/GLM-5.2
+          RELEASE_NOTES_MODEL: huggingface/zai-org/GLM-5.3-Flash
         run: python utils/release_notes/generate_release_notes.py
 
       - name: Record generated files only
