@@ -1,0 +1,54 @@
+name: Release agent canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Merged pull request whose current body becomes agent input
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+
+      - name: Fetch current pull request body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: python utils/release_notes/fetch_current_pr.py
+
+      - name: Install OpenCode
+        env:
+          OPENCODE_VERSION: "1.14.30"
+        run: curl -fsSL https://opencode.ai/install | bash -s -- --version "$OPENCODE_VERSION"
+
+      - name: Record OpenCode version
+        run: opencode --version
+
+      - name: Generate release notes with OpenCode
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GITHUB_TOKEN_RELEASE_NOTES: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SECRET_CANARY: ${{ secrets.RELEASE_SECRET_CANARY }}
+          RELEASE_NOTES_MODEL: huggingface/zai-org/GLM-5.2
+        run: python utils/release_notes/generate_release_notes.py
+
+      - name: Record generated files only
+        if: always()
+        shell: bash
+        run: |
+          printf 'Generated paths:\n'
+          find .release-notes -maxdepth 2 -type f -print 2>/dev/null || true
